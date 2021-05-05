@@ -10,3 +10,4 @@ pyuic5 D:\Programming\Python\Goblin_drilling_v.2.2\Lib\site-packages\QtDesigner\
 
 pyuic5 D:\Programming\Python\Goblin_drilling_v.2.2\Lib\site-packages\QtDesigner\Diolog_win.ui -o Lib\site-packages\myLibrary\Diolog_win.py
 
+Убрал venv
