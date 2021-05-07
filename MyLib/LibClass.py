@@ -1196,8 +1196,7 @@ class CalculateDrilling(Operation):
         delta = 0
         if Gl.pr['обороты_ротора'] > 0:
             if self.__time_start is None:
-                self.__time_start = datetime.now() - date_time.timedelta(seconds=31)
-                delta = 31
+                self.__time_start = datetime.now()
             else:
                 delta = (datetime.now() - self.__time_start).seconds
         else:
