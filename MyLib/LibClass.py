@@ -5,6 +5,7 @@ from PyQt5.QtCore import QObject
 from MyLib.Windows import MessageBox as Msg
 from datetime import datetime
 from MyLib import Variables as Gl
+import datetime as date_time
 import json
 import time
 import pythoncom
@@ -519,7 +520,7 @@ class EditParameter(Ram, Tools, InpGti, ResetProperties):
 
     def w_dep_load(self, data):
         self.write_process_memory(Gl.md['Адреса']['глубина_для_нагрузки'], struct.pack('<f', data), buffer_size=4)
-        self.write_inp_gti(data, r'глубина_для_нагрузки=\d+[.,]*\d')
+        self.write_inp_gti(data, r'глубина_для_нагрузки=\d+[.,]*\d*')
 
 
 class CalculateDepthTool(EditParameter):
@@ -1174,7 +1175,7 @@ class CalculateDrilling(Operation):
         self.__last_item_tool = None
         self.__up_depth_tool = None
         self.__weight_tool = None
-        self.__time_start = None
+        self.__time_start = datetime.now() - date_time.timedelta(seconds=31)
         self.data_drilling = {
             'Прогресс': 0,
             'Ротор': None
