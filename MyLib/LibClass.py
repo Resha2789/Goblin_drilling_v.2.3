@@ -373,14 +373,18 @@ class Excel:
 
             row = 0
             for i in read_data:
-
-                if i[0] is not None and i[10] is not None:
-                    self.composition.append(i[0]) if row < 29 else self.pipe.append(i[0])
+                # КНБК
+                if i[10] is not None and row <= 29:
+                    self.composition.append(i[0])
+                # Трубы
+                if i[0] is not None and row > 29:
+                    self.pipe.append(i[0])
+                # Мера по нарастающи
+                if i[0] is not None:
                     self.pipe_items.append(round(self.pipe_items[-1] + i[0], 2)) if row > 0 else self.pipe_items.append(i[0] - Gl.md['L_до_АКБ'])
-
-                else:
-                    if i[0] is None and row > 29:
-                        break
+                # Выход из цикла если мера закончилась
+                if i[0] is None and row > 29:
+                    break
 
                 row += 1
 
