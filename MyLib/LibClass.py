@@ -371,7 +371,7 @@ class Excel:
             self.pipe = []
             self.pipe_items = []
 
-            row = 0
+            row = 1
             for i in read_data:
                 # КНБК
                 if i[10] is not None and row <= 29:
@@ -380,8 +380,8 @@ class Excel:
                 if i[0] is not None and row > 29:
                     self.pipe.append(i[0])
                 # Мера по нарастающи
-                if i[0] is not None:
-                    self.pipe_items.append(round(self.pipe_items[-1] + i[0], 2)) if row > 0 else self.pipe_items.append(i[0] - Gl.md['L_до_АКБ'])
+                if i[0] is not None and (i[10] is not None or row > 29):
+                    self.pipe_items.append(round(self.pipe_items[-1] + i[0], 2)) if row > 1 else self.pipe_items.append(i[0] - Gl.md['L_до_АКБ'])
                 # Выход из цикла если мера закончилась
                 if i[0] is None and row > 29:
                     break
