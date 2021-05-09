@@ -1,6 +1,7 @@
 import sys
 import re
 import struct
+import time
 from MyLib import Variables as Gl
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QWidget, QSystemTrayIcon, QStyle
@@ -60,11 +61,16 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         # Запрещаем вывод сообщений в консоль главного окна
         self.startLog = False
 
-        self.original_style = self.styleSheet()
+        # Устанавливаем свои стили
+        self.set_my_style()
+
+        self.repaint()
 
         self.set_value()
 
         self.set_connect()
+
+        self.mainThreading = None
 
     def set_value(self):
         # Инициализация статуса программы
@@ -209,6 +215,39 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         self.lineEdit_5.setText(f"{Gl.md['Поднято_свеч']}")
         self.lineEdit_6.setText(f"{Gl.md['Поднято_труб']}")
 
+    def set_my_style(self):
+        # self.setStyleSheet('{font: 10pt Arial;}')
+        self.original_style = "#frame_Main{background-image: url(image/beautiful-girl.jpg); border:0px; background-repeat: no-repeat; background-position: center;}" \
+                              "#textBrowser_console{font: 10pt Arial;}" \
+                              "#plainTextEdit_about{background: rgba(0,0,0,30%);}" \
+                              "#textBrowser_console{background: rgba(0,0,0,30%); color: rgb(255, 255, 255);}" \
+                              "#plainTextEdit_about{background: rgba(0,0,0,30%); color: rgb(255, 255, 255);}" \
+                              ".QLabel{color: rgb(255, 255, 255);}" \
+                              ".QCheckBox{color: rgb(255, 255, 255);}" \
+                              ".QCheckBox::indicator:checked{background-color: rgb(8, 176, 0);}" \
+                              ".QCheckBox::indicator:unchecked{background-color: rgba(0,0,0,50%);}" \
+                              ".QPushButton{background: rgba(255,255,255,40%); color: rgb(255, 255, 255); border-radius: 5px;}" \
+                              "#pushButton_updata_tools{background: rgba(255,255,255,90%); color: rgb(0, 0, 0);}" \
+                              ".QGroupBox{" \
+                              """border: 1px outset gray;
+                            border-radius: 6px;
+                            subcontrol-origin: margin;
+                            subcontrol-position: top left;
+                            padding-top: 10px;
+                            padding-left: 3px;
+                            padding-right: 3px;
+                            padding-bottom: 3px;
+                            color: rgb(8, 176, 0);
+                            }""" \
+                              ".QGroupBox::indicator:checked{background-color: rgb(8, 176, 0);}" \
+                              ".QGroupBox::indicator:unchecked{background-color: rgba(0,0,0,50%);}" \
+                              ".QGroupBox::unchecked{background-color: rgba(0,0,0,40%);}" \
+                              ".QGroupBox::disabled{background-color: rgba(0,0,0,60%);}" \
+                              "#groupBox_6,#groupBox_8,#groupBox_9{border: 0px} " \
+                              ".QLineEdit, .QSpinBox, .QDoubleSpinBox{border-radius: 3px;}" \
+
+        self.setStyleSheet(self.original_style)
+
     def start(self):
         if self.get_pid() is None:
             self.groupBox_deepControl.setChecked(QtCore.Qt.Unchecked)
@@ -219,15 +258,17 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
             self.connect()
 
             style = """#pushButton_Start
-            {background-color: rgb(0, 255, 0);}
+            {background-color: rgba(0, 255, 0, 40%);}
             """
+
             self.pushButton_Start.setText('STOP')
             self.setStyleSheet(self.original_style + style)
         else:
             self.status_of_start = False
             self.disconnect()
+
             style = """#pushButton_Start
-                        {background-color: rgb(255, 0, 0);}
+                        {background-color: rgba(255, 0, 0, 40);}
                         """
             self.pushButton_Start.setText('START')
             self.setStyleSheet(self.original_style + style)
@@ -237,18 +278,36 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         self.mainThreading = MainThreading(parent=self)  # Запускаем дополнительный поток
         self.groupBox_deepControl.setEnabled(True)  # Активируем groupBox_deepControl
         self.groupBox_findOffsetOfRAM.setEnabled(False)  # Диактивируем groupBox_findOffsetOfRAM для поиска адреса в RAM
-        self.groupBox_findOffsetOfRAM.setChecked(QtCore.Qt.Unchecked)
+        self.groupBox_findOffsetOfRAM.setChecked(True)
         self.pushButton_updata_tools.setEnabled(True)  # Активируем кнопку обновленя промера
 
     def disconnect(self):
-        self.startLog = False  # Диактивируем вывод сообщений в консоль главного окна
-        self.groupBox_deepControl.setChecked(QtCore.Qt.Unchecked)
-        self.groupBox_deepControl.setEnabled(False)  # Активируем groupBox_deepControl
+        self.groupBox_deepControl.setChecked(False)
+        self.groupBox_deepControl.setEnabled(False)  # Диактивируем groupBox_deepControl
         self.groupBox_findOffsetOfRAM.setEnabled(True)  # Активируем groupBox_findOffsetOfRAM для поиска адреса в RAM
         self.pushButton_updata_tools.setEnabled(False)  # Диактивируем кнопку обновленя промера
+        print('\nПрограмма остановлена!')
+        self.startLog = False  # Диактивируем вывод сообщений в консоль главного окна
+        self.close_widget()
+
+    def close_widget(self):
+        time.sleep(5)
+        self.groupBox_spo_notes.setChecked(False)
+        self.groupBox_spo_notes.setEnabled(False)
+        self.pushButton_drilling.setEnabled(False)
+        self.pushButton_spo.setEnabled(False)
+
+        # Закрыаем виджаты
+        if self.win_drilling:
+            self.win_drilling.close()
+            self.groupBox_7.setEnabled(False)
+
+        if self.win_spo:
+            self.win_spo.close()
+        self.close_md()
+        self.mainThreading = None
 
     def depth_control(self):
-
         if self.groupBox_deepControl.isChecked():
             if self.get_pid() is None:
                 self.groupBox_deepControl.setChecked(QtCore.Qt.Unchecked)
@@ -258,7 +317,10 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
             # self.startLog = True
 
             # Запускаем дополнительный поток
-            # self.mainThreading = MainThreading(parent=self)
+            if self.mainThreading is None:
+                self.mainThreading = MainThreading(parent=self)
+
+
             self.mainThreading.start()
 
             self.pushButton_drilling.setEnabled(True)  # pushButton_drilling активирует кнопку запуска виджета бурения
@@ -268,17 +330,7 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
 
         else:
             print(f"Контроль глубины остановлен!")
-            self.groupBox_spo_notes.setEnabled(False)
-            self.pushButton_drilling.setEnabled(False)
-            self.pushButton_spo.setEnabled(False)
-
-            # Закрыаем виджаты
-            if self.win_drilling:
-                self.win_drilling.close()
-
-            if self.win_spo:
-                self.win_spo.close()
-            self.close_md()
+            self.close_widget()
 
     def show_drilling_window(self):
         if not self.win_drilling:
@@ -286,6 +338,8 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
             self.win_drilling = Frames.FrameDrilling(parent=self)
             self.win_drilling.setObjectName('win_drilling')
             self.win_drilling.show()
+            self.groupBox_7.setEnabled(True)
+
         elif self.win_drilling.isHidden():
             print('Показали win_drilling')
             self.win_drilling.setVisible(True)
@@ -340,7 +394,6 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
             print('Главное окно close')
 
     def check_box_set_notes(self):
-
         if self.groupBox_spo_notes.isChecked():
             self.pushButton_spo.setEnabled(True)
             self.init_spo()
@@ -350,7 +403,6 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
                 self.win_spo.close()
 
     def browse_folder_inpgti(self):
-
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Выберите папку скважины")
         # открыть диалог выбора директории и установить значение переменной
         if directory:  # не продолжать выполнение, если пользователь не выбрал директорию
@@ -359,7 +411,6 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
             Gl.md['Директория_заметки'] = f"{directory}/Заметки.rem"
 
     def browse_folder_registr_nbl_extended(self):
-
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Выберите папку registr")
         # открыть диалог выбора директории и установить значение переменной
         if directory:  # не продолжать выполнение, если пользователь не выбрал директорию
@@ -367,7 +418,6 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
             Gl.md['Директория_registr'] = f"{directory}/registr.nbl.extended"
 
     def browse_folder_salectFile(self):
-
         directory = QtWidgets.QFileDialog.getOpenFileName(self, "Выберите файл: Cлежения за глубиной")
         print(directory[0])
         # открыть диалог выбора директории и установить значение переменной
@@ -381,13 +431,12 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         pass
         if self.startLog == True:
             if severity == self.Severity.ERROR:
-                self.textBrowser.append('<b>{}</b>'.format(text))
+                self.textBrowser_console.append('<b>{}</b>'.format(text))
                 if self.groupBox_deepControl.isChecked():
-                    self.groupBox_deepControl.setChecked(QtCore.Qt.Unchecked)
-                    self.depth_control()
+                    self.start()
 
             else:
-                self.textBrowser.append('<small>{}</small>'.format(text))
+                self.textBrowser_console.append('<small>{}</small>'.format(text))
 
     def dataChange_progressBar(self, data):  # Вызывается для обработки сигнала
 
@@ -477,7 +526,6 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         Gl.md['Последняя_труба'] = value
 
     def init_spo(self):
-
         # Спущено все элементов
         self.spinBox_all_itemTool.setValue(Gl.md['Cпущ_элем'])
 
