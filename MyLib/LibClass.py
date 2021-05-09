@@ -647,7 +647,7 @@ class ReadAddress(EditParameter):
                 print(f"Значения по настройкам из оперативной памяти: {Gl.md['НастРег']}")
                 self.readAddress = True
 
-                print('Чтение настроек Успешно!')
+                print('Чтение настроек Успешно!\nПрограмма запущена!')
                 return True
 
             else:

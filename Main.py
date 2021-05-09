@@ -4,7 +4,7 @@ import struct
 from MyLib import Variables as Gl
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QWidget, QSystemTrayIcon, QStyle
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, pyqtSignal
 from MyLib.Windows.My_pyqt5 import Main_win
 from MyLib.Windows import Frames
 from MyLib.MainThread import MainThreading
@@ -13,7 +13,7 @@ from MyLib import LibClass
 
 
 class Communicate(QObject):
-    dataChange_mainWindow = QtCore.pyqtSignal(object)
+    dataChange_mainWindow: pyqtSignal = QtCore.pyqtSignal(object)
     data_change_drilling = QtCore.pyqtSignal(object)
     data_change_spo = QtCore.pyqtSignal(object)
     dataChange_progressBar = QtCore.pyqtSignal(object)
@@ -60,11 +60,15 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         # Запрещаем вывод сообщений в консоль главного окна
         self.startLog = False
 
+        self.original_style = self.styleSheet()
+
         self.set_value()
 
         self.set_connect()
 
     def set_value(self):
+        # Инициализация статуса программы
+        self.status_of_start = False
 
         # Размеры главного окна
         self.resize(Gl.md['Размер_главное_окно'][0], Gl.md['Размер_главное_окно'][1])
@@ -118,6 +122,9 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         self.Commun.dataChange_mainWindow.connect(self.dataChange_mainWindow)
         self.Commun.dataChange_progressBar.connect(self.dataChange_progressBar)
 
+        # СТАРТ программы
+        self.pushButton_Start.clicked.connect(self.start)
+
         # Контроль глубины
         self.groupBox_deepControl.clicked.connect(self.depth_control)
 
@@ -153,9 +160,6 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
 
         # Изменение высоты тальблока (проверка адреса)
         self.pushButton_checkOffsetHoistBlock.clicked.connect(self.checkOffsetHoistBlock)
-
-        # Изменение колличества спущенных элементов (проверка адреса)
-        self.pushButton_checkOffsetItemCandel.clicked.connect(self.checkOffsetItemCandel)
 
         # Выбор файла (inpgti)
         self.pushButton_1.clicked.connect(self.browse_folder_inpgti)
@@ -205,6 +209,44 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         self.lineEdit_5.setText(f"{Gl.md['Поднято_свеч']}")
         self.lineEdit_6.setText(f"{Gl.md['Поднято_труб']}")
 
+    def start(self):
+        if self.get_pid() is None:
+            self.groupBox_deepControl.setChecked(QtCore.Qt.Unchecked)
+            return
+
+        if not self.status_of_start:
+            self.status_of_start = True
+            self.connect()
+
+            style = """#pushButton_Start
+            {background-color: rgb(0, 255, 0);}
+            """
+            self.pushButton_Start.setText('STOP')
+            self.setStyleSheet(self.original_style + style)
+        else:
+            self.status_of_start = False
+            self.disconnect()
+            style = """#pushButton_Start
+                        {background-color: rgb(255, 0, 0);}
+                        """
+            self.pushButton_Start.setText('START')
+            self.setStyleSheet(self.original_style + style)
+
+    def connect(self):
+        self.startLog = True  # Разришаем вывод сообщений в консоль главного окна
+        self.mainThreading = MainThreading(parent=self)  # Запускаем дополнительный поток
+        self.groupBox_deepControl.setEnabled(True)  # Активируем groupBox_deepControl
+        self.groupBox_findOffsetOfRAM.setEnabled(False)  # Диактивируем groupBox_findOffsetOfRAM для поиска адреса в RAM
+        self.groupBox_findOffsetOfRAM.setChecked(QtCore.Qt.Unchecked)
+        self.pushButton_updata_tools.setEnabled(True)  # Активируем кнопку обновленя промера
+
+    def disconnect(self):
+        self.startLog = False  # Диактивируем вывод сообщений в консоль главного окна
+        self.groupBox_deepControl.setChecked(QtCore.Qt.Unchecked)
+        self.groupBox_deepControl.setEnabled(False)  # Активируем groupBox_deepControl
+        self.groupBox_findOffsetOfRAM.setEnabled(True)  # Активируем groupBox_findOffsetOfRAM для поиска адреса в RAM
+        self.pushButton_updata_tools.setEnabled(False)  # Диактивируем кнопку обновленя промера
+
     def depth_control(self):
 
         if self.groupBox_deepControl.isChecked():
@@ -213,26 +255,22 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
                 return
 
             # Разришаем вывод сообщений в консоль главного окна
-            self.startLog = True
+            # self.startLog = True
 
             # Запускаем дополнительный поток
-            self.mainThreading = MainThreading(parent=self)
+            # self.mainThreading = MainThreading(parent=self)
             self.mainThreading.start()
 
             self.pushButton_drilling.setEnabled(True)  # pushButton_drilling активирует кнопку запуска виджета бурения
             self.groupBox_spo_notes.setEnabled(True)  # groupBox_spo_notes для СПО активируем
-            self.groupBox_findOffsetOfRAM.setEnabled(False)  # Диактивируем groupBox_findOffsetOfRAM для поиска адреса в RAM
-            self.groupBox_findOffsetOfRAM.setChecked(QtCore.Qt.Unchecked)
-            self.pushButton_updata_tools.setEnabled(True)  # Активируем кнопку обновленя промера
-            print(f"Программа запущена!")
+
+            print(f"Контроль глубины запущен!")
 
         else:
-            print(f"Работа программы остановлена!")
+            print(f"Контроль глубины остановлен!")
             self.groupBox_spo_notes.setEnabled(False)
             self.pushButton_drilling.setEnabled(False)
             self.pushButton_spo.setEnabled(False)
-            self.groupBox_findOffsetOfRAM.setEnabled(True)  # Активируем groupBox_findOffsetOfRAM для поиска адреса в RAM
-            self.pushButton_updata_tools.setEnabled(False)  # Диактивируем кнопку обновленя промера
 
             # Закрыаем виджаты
             if self.win_drilling:
