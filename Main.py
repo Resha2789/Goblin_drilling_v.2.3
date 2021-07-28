@@ -3,14 +3,24 @@ import re
 import struct
 import time
 from MyLib import Variables as Gl
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QWidget, QSystemTrayIcon, QStyle
+from PyQt5 import QtWidgets, QtCore, QtGui, QtGui
+from PyQt5.QtWidgets import QWidget, QSystemTrayIcon
 from PyQt5.QtCore import QObject, pyqtSignal
 from MyLib.Windows.My_pyqt5 import Main_win
-from MyLib.Windows import Frames
+from MyLib.Windows import Frames, Style
 from MyLib.MainThread import MainThreading
 from MyLib.LibClass import Md, OutLogger, OutputLogger, FindOffset, ReadAddress
 from MyLib import LibClass
+
+# Для иконки в приложении
+try:
+    # Включите в блок try/except, если вы также нацелены на Mac/Linux
+    from PyQt5.QtWinExtras import QtWin  # !!!
+
+    myappid = 'mycompany.myproduct.subproduct.version'  # !!!
+    QtWin.setCurrentProcessExplicitAppUserModelID(myappid)  # !!!
+except ImportError:
+    pass
 
 
 class Communicate(QObject):
@@ -29,6 +39,13 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
     def initMainWindow(self):
         self.setupUi(self)
         self.mainWindow = self
+
+        # Устанавливаем иконку
+        app_icon = QtGui.QIcon()
+        app_icon.addFile('Нужное/icon-robots-42.ico', QtCore.QSize(42, 42))
+        app_icon.addFile('Нужное/icon-robots-64.ico', QtCore.QSize(64, 64))
+        app_icon.addFile('Нужное/icon-robots-72.ico', QtCore.QSize(72, 72))
+        self.setWindowIcon(app_icon)
 
         # Инициализируем эксземпляр класса Md
         self.init_setting()
@@ -56,13 +73,15 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         self.win_spo = None
 
         # Инициализируем QSystemTrayIcon
-        self.trayIcon = LibClass.TrayIcon(self, True, QStyle.SP_MessageBoxWarning)
+        self.trayIcon = LibClass.TrayIcon(self, True, style="robots")
 
         # Запрещаем вывод сообщений в консоль главного окна
         self.startLog = False
 
         # Устанавливаем свои стили
-        self.set_my_style()
+        # self.set_my_style()
+        self.custom_style = Style.CustomStyle(parent=self)
+        self.custom_style.set_style()
 
         self.repaint()
 
@@ -122,6 +141,13 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         # Глубина над забоем для нагрузки
         self.doubleSpinBox_depLoad.setValue(Gl.md['Гл_для_нагрузки'])
 
+        # Часовой пояс
+        self.comboBox_timezone.addItems(Gl.md['Часовые_пояса'])
+        self.comboBox_timezone.setCurrentText(Gl.md['Часовой_пояс'])
+
+        # Название фоновой картинки
+        self.pushButton_image.setText(f"Фон: {re.sub(r'.*[/]+', '', Gl.md['Фоновая_картинка'])}")
+
     def set_connect(self):
 
         # Конектим пользовательский сигнал на mainWindow
@@ -167,6 +193,9 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         # Изменение высоты тальблока (проверка адреса)
         self.pushButton_checkOffsetHoistBlock.clicked.connect(self.checkOffsetHoistBlock)
 
+        # Изменение количество элементов (проверка адреса)
+        self.pushButton_checkOffsetItemCandel.clicked.connect(self.checkOffsetItemCandel)
+
         # Выбор файла (inpgti)
         self.pushButton_1.clicked.connect(self.browse_folder_inpgti)
 
@@ -203,6 +232,18 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         # Глубина над забоем для нагрузки
         self.doubleSpinBox_depLoad.valueChanged.connect(self.dep_load)
 
+        # Записываем часовой пояс
+        self.comboBox_timezone.currentTextChanged.connect(self.set_timezone)
+
+        # Выбор цвета текста
+        self.pushButton_color_label.clicked.connect(self.set_color)
+        # Выбор цвета текста на кнопках
+        self.pushButton_color_button.clicked.connect(self.set_color)
+        # Выбор цвета текста значений
+        self.pushButton_color_line_edit.clicked.connect(self.set_color)
+        # Выбор фоновой картинки
+        self.pushButton_image.clicked.connect(self.set_background_image)
+
         # Вывод сообщений в консоль
         self.OUTPUT_LOGGER_STDOUT.emit_write.connect(self.append_log)
         self.OUTPUT_LOGGER_STDERR.emit_write.connect(self.append_log)
@@ -215,39 +256,6 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         self.lineEdit_5.setText(f"{Gl.md['Поднято_свеч']}")
         self.lineEdit_6.setText(f"{Gl.md['Поднято_труб']}")
 
-    def set_my_style(self):
-        # self.setStyleSheet('{font: 10pt Arial;}')
-        self.original_style = "#frame_Main{background-image: url(image/beautiful-girl.jpg); border:0px; background-repeat: no-repeat; background-position: center;}" \
-                              "#textBrowser_console{font: 10pt Arial;}" \
-                              "#plainTextEdit_about{background: rgba(0,0,0,30%);}" \
-                              "#textBrowser_console{background: rgba(0,0,0,30%); color: rgb(255, 255, 255);}" \
-                              "#plainTextEdit_about{background: rgba(0,0,0,30%); color: rgb(255, 255, 255);}" \
-                              ".QLabel{color: rgb(255, 255, 255);}" \
-                              ".QCheckBox{color: rgb(255, 255, 255);}" \
-                              ".QCheckBox::indicator:checked{background-color: rgb(8, 176, 0);}" \
-                              ".QCheckBox::indicator:unchecked{background-color: rgba(0,0,0,50%);}" \
-                              ".QPushButton{background: rgba(255,255,255,40%); color: rgb(255, 255, 255); border-radius: 5px;}" \
-                              "#pushButton_updata_tools{background: rgba(255,255,255,90%); color: rgb(0, 0, 0);}" \
-                              ".QGroupBox{" \
-                              """border: 1px outset gray;
-                            border-radius: 6px;
-                            subcontrol-origin: margin;
-                            subcontrol-position: top left;
-                            padding-top: 10px;
-                            padding-left: 3px;
-                            padding-right: 3px;
-                            padding-bottom: 3px;
-                            color: rgb(8, 176, 0);
-                            }""" \
-                              ".QGroupBox::indicator:checked{background-color: rgb(8, 176, 0);}" \
-                              ".QGroupBox::indicator:unchecked{background-color: rgba(0,0,0,50%);}" \
-                              ".QGroupBox::unchecked{background-color: rgba(0,0,0,40%);}" \
-                              ".QGroupBox::disabled{background-color: rgba(0,0,0,60%);}" \
-                              "#groupBox_6,#groupBox_8,#groupBox_9{border: 0px} " \
-                              ".QLineEdit, .QSpinBox, .QDoubleSpinBox{border-radius: 3px;}" \
-
-        self.setStyleSheet(self.original_style)
-
     def start(self):
         if self.get_pid() is None:
             self.groupBox_deepControl.setChecked(QtCore.Qt.Unchecked)
@@ -256,29 +264,28 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         if not self.status_of_start:
             self.status_of_start = True
             self.connect()
-
-            style = """#pushButton_Start
-            {background-color: rgba(0, 255, 0, 40%);}
-            """
-
             self.pushButton_Start.setText('STOP')
-            self.setStyleSheet(self.original_style + style)
+            self.custom_style.style_pushButton_Start = "#pushButton_Start{background-color: rgba(0, 255, 0, 40%);}" \
+                                                       "#pushButton_Start:hover{background-color: rgba(0, 255, 0, 60%);}" \
+                                                       "#pushButton_Start:pressed{background-color: rgba(0, 255, 0, 50%); border: 1px outset gray;}"
+            self.custom_style.set_style()
+
         else:
             self.status_of_start = False
             self.disconnect()
-
-            style = """#pushButton_Start
-                        {background-color: rgba(255, 0, 0, 40);}
-                        """
             self.pushButton_Start.setText('START')
-            self.setStyleSheet(self.original_style + style)
+            self.custom_style.style_pushButton_Start = "#pushButton_Start{background-color: rgba(255, 0, 0, 40%);}" \
+                                                       "#pushButton_Start:hover{background: rgba(255, 0, 0, 60%); color: rgb(255, 255, 255);}" \
+                                                       "#pushButton_Start:pressed{background: rgba(255, 0, 0, 50%); color: rgb(255, 255, 255); " \
+                                                       "border: 1px outset gray;}"
+            self.custom_style.set_style()
 
     def connect(self):
         self.startLog = True  # Разришаем вывод сообщений в консоль главного окна
         self.mainThreading = MainThreading(parent=self)  # Запускаем дополнительный поток
         self.groupBox_deepControl.setEnabled(True)  # Активируем groupBox_deepControl
         self.groupBox_findOffsetOfRAM.setEnabled(False)  # Диактивируем groupBox_findOffsetOfRAM для поиска адреса в RAM
-        self.groupBox_findOffsetOfRAM.setChecked(True)
+        self.groupBox_findOffsetOfRAM.setChecked(False)
         self.pushButton_updata_tools.setEnabled(True)  # Активируем кнопку обновленя промера
 
     def disconnect(self):
@@ -307,6 +314,18 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         self.close_md()
         self.mainThreading = None
 
+        self.custom_style.style_pushButton_drilling = "#pushButton_drilling{background: rgba(255,255,255,40%);" \
+                                                      "border-radius: 5px; border: 2px outset gray;}" \
+                                                      "#pushButton_drilling:hover{background: rgba(255,255,255,60%); color: rgb(0, 0, 0);}" \
+                                                      "#pushButton_drilling:pressed{background: rgba(255,255,255,50%); color: rgb(0, 0, 0);}"
+
+        self.custom_style.style_pushButton_spo = "#pushButton_spo{background: rgba(255,255,255,40%);" \
+                                                 "border-radius: 5px; border: 2px outset gray;}" \
+                                                 "#pushButton_spo:hover{background: rgba(255,255,255,60%); color: rgb(0, 0, 0);}" \
+                                                 "#pushButton_spo:pressed{background: rgba(255,255,255,50%); color: rgb(0, 0, 0);}"
+
+        self.custom_style.set_style()
+
     def depth_control(self):
         if self.groupBox_deepControl.isChecked():
             if self.get_pid() is None:
@@ -319,7 +338,6 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
             # Запускаем дополнительный поток
             if self.mainThreading is None:
                 self.mainThreading = MainThreading(parent=self)
-
 
             self.mainThreading.start()
 
@@ -339,6 +357,10 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
             self.win_drilling.setObjectName('win_drilling')
             self.win_drilling.show()
             self.groupBox_7.setEnabled(True)
+            self.custom_style.style_pushButton_drilling = "#pushButton_drilling{background-color: rgba(0, 255, 0, 40%);}" \
+                                                          "#pushButton_drilling:hover{background-color: rgba(0, 255, 0, 60%);}" \
+                                                          "#pushButton_drilling:pressed{background-color: rgba(0, 255, 0, 50%); border: 1px outset gray;}"
+            self.custom_style.set_style()
 
         elif self.win_drilling.isHidden():
             print('Показали win_drilling')
@@ -353,6 +375,11 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
             self.win_spo = Frames.FrameSpo(parent=self)
             self.win_spo.setObjectName('win_spo')
             self.win_spo.show()
+            self.custom_style.style_pushButton_spo = "#pushButton_spo{background-color: rgba(0, 255, 0, 40%);}" \
+                                                     "#pushButton_spo:hover{background-color: rgba(0, 255, 0, 60%);}" \
+                                                     "#pushButton_spo:pressed{background-color: rgba(0, 255, 0, 50%); border: 1px outset gray;}"
+            self.custom_style.set_style()
+
         elif self.win_spo.isHidden():
             print('Показали win_spo')
             self.win_spo.setVisible(True)
@@ -526,7 +553,7 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         Gl.md['Последняя_труба'] = value
 
     def init_spo(self):
-        # Спущено все элементов
+        # Спущено всего элементов
         self.spinBox_all_itemTool.setValue(Gl.md['Cпущ_элем'])
 
         # Считываем настройки для заметок
@@ -536,7 +563,6 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
                 [self.spinBox_item_down_2, self.spinBox_piple_down_2, self.lineEdit_text_down_2],
                 [self.spinBox_item_down_3, self.spinBox_piple_down_3, self.lineEdit_text_down_3]
             ],
-
             'up': [
                 [self.spinBox_item_up_1, self.spinBox_piple_up_1, self.lineEdit_text_up_1],
                 [self.spinBox_item_up_2, self.spinBox_piple_up_2, self.lineEdit_text_up_2],
@@ -547,7 +573,6 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
         for i in self.notes_spo:
             for j in range(len(self.notes_spo[i])):
                 for ij in range(len(self.notes_spo[i][j])):
-
                     if type(self.notes_spo[i][j][ij]) == type(self.spinBox_item_down_1):
                         self.notes_spo[i][j][ij].setValue(Gl.md['Заметки_спо'][i][j][ij])
                         self.notes_spo[i][j][ij].valueChanged.connect(self.notes_change_spo)
@@ -643,6 +668,75 @@ class MainWindow(QWidget, Md, FindOffset, OutLogger, OutputLogger, ReadAddress, 
 
     def dep_load(self, value):
         Gl.md['Гл_для_нагрузки'] = value
+
+    def set_timezone(self, val):
+        Gl.md['Часовой_пояс'] = val
+
+    def set_color(self):
+        # Вызываем диологовое окно выбора цвета
+        dlg = QtWidgets.QColorDialog(self)
+
+        if self.sender() == self.pushButton_color_label:
+            # Устанавливаем рание выбранный цвет
+            if len(Gl.md['Цвет_надписей'][1]) > 0:
+                dlg.setCurrentColor(QtGui.QColor(Gl.md['Цвет_надписей'][1]))
+
+            # Действие после нажатия ок
+            if dlg.exec_():
+                Gl.md['Цвет_надписей'][1] = dlg.currentColor().name()
+                Gl.md['Цвет_надписей'][0] = f"{dlg.currentColor().getRgb()}"
+                self.custom_style.style_label = f".QLabel{{color: rgb{Gl.md['Цвет_надписей'][0]};}}" \
+                                                ".QLabel::disabled{color: gray;}"
+                self.custom_style.style_pushButton_color_label = f"#pushButton_color_label{{color: rgb{Gl.md['Цвет_надписей'][0]};}}"
+                self.custom_style.set_style()
+                self.safe_setting()
+
+        if self.sender() == self.pushButton_color_button:
+            # Устанавливаем рание выбранный цвет
+            if len(Gl.md['Цвет_надписей_кнопок'][1]) > 0:
+                dlg.setCurrentColor(QtGui.QColor(Gl.md['Цвет_надписей_кнопок'][1]))
+
+            # Действие после нажатия ок
+            if dlg.exec_():
+                Gl.md['Цвет_надписей_кнопок'][1] = dlg.currentColor().name()
+                Gl.md['Цвет_надписей_кнопок'][0] = f"{dlg.currentColor().getRgb()}"
+                self.custom_style.style_pushButton = f".QPushButton{{background: rgba(255,255,255,40%); " \
+                                                     f"color: rgb{Gl.md['Цвет_надписей_кнопок'][0]}; " \
+                                                     f"border-radius: 5px; " \
+                                                     f"border: 2px outset gray;}}"
+                self.custom_style.style_pushButton_color_button = f"#pushButton_color_button{{color: rgb{Gl.md['Цвет_надписей_кнопок'][0]};}}"
+                self.custom_style.style_pushButton_color_label = f"#pushButton_color_label{{color: rgb{Gl.md['Цвет_надписей'][0]};}}"
+                self.custom_style.style_pushButton_color_line_edit = f"#pushButton_color_line_edit{{color: rgb{Gl.md['Цвет_значений'][0]};}}"
+                self.custom_style.set_style()
+                self.safe_setting()
+
+        if self.sender() == self.pushButton_color_line_edit:
+            # Устанавливаем рание выбранный цвет
+            if len(Gl.md['Цвет_значений'][1]) > 0:
+                dlg.setCurrentColor(QtGui.QColor(Gl.md['Цвет_значений'][1]))
+
+            # Действие после нажатия ок
+            if dlg.exec_():
+                Gl.md['Цвет_значений'][1] = dlg.currentColor().name()
+                Gl.md['Цвет_значений'][0] = f"{dlg.currentColor().getRgb()}"
+                self.custom_style.style_lineEdit = f".QLineEdit, " \
+                                                   f".QSpinBox, " \
+                                                   f".QDoubleSpinBox{{border-radius: 3px; color: rgb{Gl.md['Цвет_значений'][0]};}}"
+                self.custom_style.style_pushButton_color_line_edit = f"#pushButton_color_line_edit{{color: rgb{Gl.md['Цвет_значений'][0]};}}"
+                self.custom_style.set_style()
+                self.safe_setting()
+
+    def set_background_image(self):
+        directory = QtWidgets.QFileDialog.getOpenFileName(self, "Выберите изображении jpg, png")
+        print(directory[0])
+        # открыть диалог выбора директории и установить значение переменной
+        if directory:  # не продолжать выполнение, если пользователь не выбрал директорию
+            self.pushButton_image.setText(f"Фон: {re.sub(r'.*[/]+', '', directory[0])}")
+            Gl.md['Фоновая_картинка'] = directory[0]
+            self.safe_setting()
+            self.custom_style.style_frame_Main = f"#frame_Main{{background-image: url({Gl.md['Фоновая_картинка']}); " \
+                                                 f"border:0px; background-repeat: no-repeat; background-position: center;}}"
+            self.custom_style.set_style()
 
 
 def main():

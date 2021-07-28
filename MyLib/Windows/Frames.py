@@ -22,7 +22,7 @@ class FrameDrilling(Fr.FramelessWindow, Md):
         self.setWidget(Drilling(frame=self, parent=self.mainWin))
 
         # Инициализируем QSystemTrayIcon
-        self.trayIcon = LibClass.TrayIcon(self, False, QStyle.SP_MessageBoxCritical)
+        self.trayIcon = LibClass.TrayIcon(self, False, style="drill")
 
         # EventFilter на все окно
         self.installEventFilter(self)
@@ -105,7 +105,7 @@ class FrameSpo(Fr.FramelessWindow, Md):
         self.setWidget(Spo(frame=self, parent=self.mainWin))
 
         # Инициализируем QSystemTrayIcon
-        self.trayIcon = LibClass.TrayIcon(self, False, QStyle.SP_MessageBoxQuestion)
+        self.trayIcon = LibClass.TrayIcon(self, False, style="up_arrow")
 
         # EventFilter на все окно
         self.installEventFilter(self)

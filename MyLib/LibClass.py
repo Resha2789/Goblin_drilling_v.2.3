@@ -1,6 +1,6 @@
 from MyLib.RWMemory import Ram
 from PyQt5.QtWidgets import QWidget, QSystemTrayIcon, QMenu, QAction, QMessageBox
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QObject
 from MyLib.Windows import MessageBox as Msg
 from datetime import datetime
@@ -74,8 +74,23 @@ class TrayIcon(QWidget):
         # hide - скрыть окно
         # exit - выход из программы
 
+        # Устанавливаем иконку
+        # Устанавливаем иконку
+        app_icon = QtGui.QIcon()
+        if style == "robots":
+            app_icon.addFile('Нужное/icon-robots-32.ico', QtCore.QSize(32, 32))
+            app_icon.addFile('Нужное/icon-robots-42.ico', QtCore.QSize(42, 42))
+            app_icon.addFile('Нужное/icon-robots-64.ico', QtCore.QSize(64, 64))
+            app_icon.addFile('Нужное/icon-robots-72.ico', QtCore.QSize(72, 72))
+        if style == "drill":
+            app_icon.addFile('Нужное/drill_48.ico', QtCore.QSize(48, 48))
+        if style == "up_arrow":
+            app_icon.addFile('Нужное/uparrow_48.ico', QtCore.QSize(48, 48))
+
+        self.setWindowIcon(app_icon)
+
         self.window.tray_icon = QSystemTrayIcon()
-        self.window.tray_icon.setIcon(self.window.style().standardIcon(style))
+        self.window.tray_icon.setIcon(app_icon)
         self.window.tray_icon.ActivationReason()
 
         show_action = QAction("Показать", self.window)
@@ -181,7 +196,7 @@ class NblExtended:
         try:
 
             text = open(Gl.md['Директория_registr'], 'r').read()
-            x = re.findall(r'\s\w{2,}\s{4}', re.sub(r"(\x00)|(\x01)|(\x02)|(\x03)", ' ', text))
+            x = re.findall(r'\s\w{2,}\.\w{2,}\s{4}|\s\w{2,}\s{4}', re.sub(r"(\x00)|(\x01)|(\x02)|(\x03)", ' ', text))
 
             Gl.md['Названия_параметров'] = []
             for i in x:
@@ -260,7 +275,7 @@ class Md:
     def load_setting(self):
         # noinspection PyBroadException
         try:
-            Gl.md = json.load(open('setting.txt'))
+            Gl.md = json.load(open('Нужное/setting.txt'))
 
         except:
             self.safe_setting()
@@ -281,8 +296,10 @@ class Md:
         up_data_md["Наст_inp_gti"] = {}
         up_data_md["НастРег"] = {}
         up_data_md["Время_заметок"] = 0
+        up_data_md["Часовые_пояса"] = ['-12', '-11', '-10', '-9', '-8', '-7', '-6', '-5', '-4', '-3', '-2',
+                                       '-1', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
 
-        setting_json = open('setting.txt', 'w')
+        setting_json = open('Нужное/setting.txt', 'w')
         json.dump(up_data_md, setting_json, sort_keys=True, indent=4, ensure_ascii=False)
         setting_json.close()
         print(f"Данные сохранены {up_data_md}")
@@ -773,7 +790,8 @@ class FindOffset(Ram):
 
                 # Считываем по адресам значении на совподение
                 for j in range(0, self.__size_last_list):
-                    read_data = self.read_process_memory(address=self.__offset_list_1[j], bytes_read=total_bytes, my_structure=my_structure, i_round=2)
+                    read_data = self.read_process_memory(address=self.__offset_list_1[j], bytes_read=total_bytes, my_structure=my_structure,
+                                                         i_round=2)
                     if j != i and read_data == set_data:
                         check_list.append(self.__offset_list_1[j])
 
@@ -996,14 +1014,20 @@ class GetDataMainWindow(SPO):
         if self.__plan_itemTool > len(self.composition):
             Gl.md['Спущено_труб'] = self.__plan_itemTool - len(self.composition)
             x = Gl.md['Спущено_труб'] % Gl.md['Труб_в_свече']
-            Gl.md['Спущено_свеч'] = int((Gl.md['Спущено_труб'] - x) / Gl.md['Труб_в_свече']) if x > 0 else int(Gl.md['Спущено_труб'] / Gl.md['Труб_в_свече'])
+            if x > 0:
+                Gl.md['Спущено_свеч'] = f"{int((Gl.md['Спущено_труб'] - x) / Gl.md['Труб_в_свече'])}/{x}"
+            else:
+                Gl.md['Спущено_свеч'] = f"{int((Gl.md['Спущено_труб'] - x) / Gl.md['Труб_в_свече'])}"
         else:
             Gl.md['Спущено_труб'], Gl.md['Спущено_свеч'] = 0, 0
 
         if Gl.md['Кол_труб_до_подъема'] > Gl.md['Спущено_труб']:
             Gl.md['Поднято_труб'] = Gl.md['Кол_труб_до_подъема'] - Gl.md['Спущено_труб']
             x = Gl.md['Поднято_труб'] % Gl.md['Труб_в_свече']
-            Gl.md['Поднято_свеч'] = int((Gl.md['Поднято_труб'] - x) / Gl.md['Труб_в_свече']) if x > 0 else int(Gl.md['Поднято_труб'] / Gl.md['Труб_в_свече'])
+            if x > 0:
+                Gl.md['Поднято_свеч'] = f"{int((Gl.md['Поднято_труб'] - x) / Gl.md['Труб_в_свече'])}/{x}"
+            else:
+                Gl.md['Поднято_свеч'] = f"{int((Gl.md['Поднято_труб'] - x) / Gl.md['Труб_в_свече'])}"
         else:
             Gl.md['Поднято_труб'], Gl.md['Поднято_свеч'] = 0, 0
 
@@ -1016,6 +1040,7 @@ class NotesPipe(NotesRem, Operation):
 
     def init_notes_pipe(self):
         self.__time = 0
+        self.__timezone = 0
         self.__time_format = 0
         self.__direction_spo = None
         self.__text_fixed = None
@@ -1046,10 +1071,15 @@ class NotesPipe(NotesRem, Operation):
         # Записываем время для заметок
         if Gl.pr['тальблок'] > 8 and round(Gl.pr['скорость_тальблока'], 4) == 0 and Gl.pr['давление_на_входе'] < self.min_press and \
                 Gl.pr['вес_на_крюке'] < self.min_weight:
-            self.__time = int(time.time()) + (24 * 60 * 60) + (5 * 60 * 60)
+            self.__timezone = int(re.search(r'\d+', Gl.md['Часовой_пояс'])[0])
+            if re.search(r'[-]+', Gl.md['Часовой_пояс']):
+                self.__time = int(time.time()) + (24 * 60 * 60) - (self.__timezone * 60 * 60)
+            else:
+                self.__time = int(time.time()) + (24 * 60 * 60) + (self.__timezone * 60 * 60)
+
             self.__time_format = datetime.now().strftime("%H:%M:%S")
 
-        # print(f"Время {self.__time_format}   / 'скорость_тальблока' {round(Gl.pr['скорость_тальблока'], 4)}")
+        # print(f"Время {self.__time_format}")
 
         if self.__time > 0:
             return True
@@ -1099,14 +1129,28 @@ class NotesPipe(NotesRem, Operation):
     def __candle_or_pipe(self, get_pipe, text):
         # Если поднимают свечи с половинкой то записываем в переменную х
         x = 0
+        step = 0
+        # Трубы
         if re.search('^тр[.]*', text):
-            total = get_pipe
+            step = get_pipe % Gl.md['Шаг_уст_заметок']  # Проверяем шаг установки заметок
+            if step == 0:
+                self.__text = f"{get_pipe}{text}"
         else:
+            # Свечи
             x = get_pipe % Gl.md['Труб_в_свече']
-            total = int((get_pipe - x) / Gl.md['Труб_в_свече']) if x > 0 else int(get_pipe / Gl.md['Труб_в_свече'])
+            data = int((get_pipe - x) / Gl.md['Труб_в_свече'])
+            step = data % Gl.md['Шаг_уст_заметок']  # Проверяем шаг установки заметок
+            if step == 0:
+                # Если идет свеча и трубка
+                if x > 0:
+                    # Проверяем если откинуть трубку и зам. кол. свечь "10св." не совподает с последней установленой то
+                    # устанавливаем заметку "10св. 1тр."
+                    if self.__text_fixed != f"{data}{text}":
+                        self.__text = f"{data}{text} {x}тр."
 
-        if total % Gl.md['Шаг_уст_заметок'] == 0:
-            self.__text = f"{total}{text}" if x == 0 else f"{total},5{text}"
+                # Если идём ровно свечами
+                else:
+                    self.__text = f"{data}{text}"
 
         if self.__text_fixed != self.__text is not None:
             return True
@@ -1271,9 +1315,9 @@ class CalculateSpo(Operation):
         self.__pipe_all = 0
         self.data_spo = {
             'down': True,
-            'Поднято': [0, 0],
-            'Спущено': [0, 0],
-            'Осталось': [0, 0],
+            'Поднято': ['0', '0'],
+            'Спущено': ['0', '0'],
+            'Осталось': ['0', '0'],
             'Прогресс': 0
         }
 
@@ -1311,7 +1355,10 @@ class CalculateSpo(Operation):
 
             # свеч
             x = self.__pipe_down % Gl.md['Труб_в_свече']
-            self.data_spo['Спущено'][1] = int((self.__pipe_down - x) / Gl.md['Труб_в_свече']) if x > 0 else int(self.__pipe_down / Gl.md['Труб_в_свече'])
+            if x > 0:
+                self.data_spo['Спущено'][1] = f"{int((self.__pipe_down - x) / Gl.md['Труб_в_свече'])}/{x}"
+            else:
+                self.data_spo['Спущено'][1] = f"{int((self.__pipe_down - x) / Gl.md['Труб_в_свече'])}"
 
             # Осталось спустить труб
             self.__pipe_last = Gl.md['Последняя_труба'] - self.__pipe_down
@@ -1319,7 +1366,10 @@ class CalculateSpo(Operation):
 
             # Осталось спустить свеч
             x = self.__pipe_last % Gl.md['Труб_в_свече']
-            self.data_spo['Осталось'][1] = int((self.__pipe_last - x) / Gl.md['Труб_в_свече']) if x > 0 else int(self.__pipe_last / Gl.md['Труб_в_свече'])
+            if x > 0:
+                self.data_spo['Осталось'][1] = f"{int((self.__pipe_last - x) / Gl.md['Труб_в_свече'])}/{x}"
+            else:
+                self.data_spo['Осталось'][1] = f"{int((self.__pipe_last - x) / Gl.md['Труб_в_свече'])}"
 
             # Всего труб нужно спустить
             self.__pipe_all = Gl.md['Последняя_труба']
@@ -1339,7 +1389,10 @@ class CalculateSpo(Operation):
 
             # свеч
             x = self.__pipe_up % Gl.md['Труб_в_свече']
-            self.data_spo['Поднято'][1] = int((self.__pipe_up - x) / Gl.md['Труб_в_свече']) if x > 0 else int(self.__pipe_up / Gl.md['Труб_в_свече'])
+            if x > 0:
+                self.data_spo['Поднято'][1] = f"{int((self.__pipe_up - x) / Gl.md['Труб_в_свече'])}/{x}"
+            else:
+                self.data_spo['Поднято'][1] = f"{int((self.__pipe_up - x) / Gl.md['Труб_в_свече'])}"
 
             # Осталось поднять труб
             self.__pipe_last = self.__pipe_down - (Gl.md['Последняя_труба'] - 1)
@@ -1347,7 +1400,10 @@ class CalculateSpo(Operation):
 
             # Осталось поднять свеч
             x = self.__pipe_last % Gl.md['Труб_в_свече']
-            self.data_spo['Осталось'][1] = int((self.__pipe_last - x) / Gl.md['Труб_в_свече']) if x > 0 else int(self.__pipe_last / Gl.md['Труб_в_свече'])
+            if x > 0:
+                self.data_spo['Осталось'][1] = f"{int((self.__pipe_last - x) / Gl.md['Труб_в_свече'])}/{x}"
+            else:
+                self.data_spo['Осталось'][1] = f"{int((self.__pipe_last - x) / Gl.md['Труб_в_свече'])}"
 
             # Всего труб нужно поднять
             self.__pipe_all = Gl.md['Кол_труб_до_подъема'] - (Gl.md['Последняя_труба'] - 1)
